@@ -1,9 +1,9 @@
 Требование:
-.NET 8
+.NET 8,
 Microsoft SQL Server
 
 Стек технологий:
-ASP.NET Core (Rest API, MVC)
+ASP.NET Core (Rest API, MVC),
 EF Core
 
 Содержвание:
