@@ -1,0 +1,349 @@
+﻿@model IEnumerable<TestExercise.Product>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Index</h1>
+
+<style>
+    .modal {
+        display: none; /* Hidden by default */
+        position: fixed; /* Stay in place */
+        z-index: 1; /* Sit on top */
+        left: 0;
+        top: 0;
+        width: 100%; /* Full width */
+        height: 100%; /* Full height */
+        overflow: auto; /* Enable scroll if needed */
+        background-color: rgb(0,0,0); /* Fallback color */
+        background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+    }
+
+    /* Modal Content/Box */
+    .modal-content {
+        background-color: #fefefe;
+        margin: 15% auto; /* 15% from the top and centered */
+        padding: 20px;
+        border: 1px solid #888;
+        width: 50%; /* Could be more or less, depending on screen size */
+    }
+
+    /* The Close Button */
+    .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+    }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        var closeElements = document.getElementsByClassName('close');
+        Array.prototype.forEach.call(closeElements, (elem) => {
+            elem.addEventListener('click', () => {
+                elem.closest(".modal").style.display = 'none';
+            });
+        });
+
+        Array.prototype.forEach.call(document.querySelectorAll('.edit-btn,.del-btn'), (elem) => {
+            elem.addEventListener('click', (e) => {
+                if (e.target.classList.contains('edit-btn')) {
+                    onEdit(e.target);
+                }
+                else {
+                    onDelete(e.target);
+                }
+                return false;
+            });
+        });
+
+        function onEdit(e) {
+            var tr = e.closest('tr');
+
+            var tds = tr.getElementsByTagName("td");
+
+            var id = tr.dataset.itemid;
+            var name = tds[0].innerText.trim();
+            var desc = tds[1].innerText.trim();
+
+            var editForm = document.getElementById('editForm');
+            var editModal = document.getElementById('editModal');
+
+            document.querySelector('#editForm input[name="id"]').value = id;
+            document.querySelector('#editForm input[name="productName"]').value = name;
+            document.querySelector('#editForm input[name="productDesc"]').value = desc;
+
+            editModal.style.display = 'block';
+        }
+
+        function onDelete(e) {
+            var tr = e.closest('tr');
+
+            var tds = tr.getElementsByTagName("td");
+
+            var id = tr.dataset.itemid;
+            var name = tds[0].innerText.trim();
+
+            if (confirm('Are you sure you want to delete ' + name + '?')) {
+                fetch("/api/" + id, {
+                    method: "DELETE",
+                }).then((response) => {
+                    if (response.status == 200) {
+                        document.getElementById('trRows').removeChild(tr);
+                    }
+                    return null;
+                }).catch((err) => {
+                    alert(err.message);
+                });
+            }
+        }
+        
+        var searchForm = document.getElementById("searchForm");
+        searchForm.onsubmit = () => {
+            var text = new FormData(searchForm).get('text');
+
+            var tableRows = document.getElementById("trRows");
+
+            fetch('/api?pattern=' + text).then((response) => {
+                return response.json();
+            }).then((data) => {
+                var text = '';
+
+                data.forEach((item) => {
+                    text += '<tr><td>' + item.name + '</td>';
+                    text += '<td>' + item.description + '</td>';
+                    text += '<td><a href="/Products/Edit/' + item.id + '">Edit</a> | <a href="/Products/Delete/' + item.id + '">Delete</a></td></tr>';
+                });
+
+                tableRows.innerHTML = text;
+            }).catch((err) => {
+                tableRows.innerHTML = '';
+            });
+
+            return false;
+        };
+
+        var editForm = document.getElementById('editForm');
+        editForm.onsubmit = () => {
+            var formDatas = new FormData(editForm);
+            
+            var id = formDatas.get('id');
+            var productName = formDatas.get('productName');
+            var productDesc = formDatas.get('productDesc');
+
+            fetch("/api/" + id, {
+                method: "PUT",
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: new URLSearchParams({
+                    name: productName,
+                    descr: productDesc
+                })
+            }).then((response) => {
+                if (response.status == 200) {
+                    return response.json();
+                }
+                return null;
+            }).then((item) => {
+                if (item) {
+                    var tableRows = document.getElementById("trRows");
+
+                    var tr = tableRows.querySelectorAll('tr[data-itemid="' + item.id + '"]')[0];
+
+                    var tds = tr.getElementsByTagName("td");
+                    tds[0].innerText = item.name;
+                    tds[1].innerText = item.description;
+
+                    editForm.closest(".modal").style.display = 'none';
+
+                    Array.prototype.forEach.call(editForm.getElementsByTagName('input'), (elem) => {
+                        if (elem.type !== 'submit') {
+                            elem.value = '';
+                        }
+                    });
+                }
+            }).catch((err) => {
+                alert(err.message);
+            });
+
+            return false;
+        };
+
+        var createForm = document.getElementById("createForm");
+        createForm.onsubmit = () => {
+            var formDatas = new FormData(createForm);
+
+            var productName = formDatas.get('productName');
+            var productDesc = formDatas.get('productDesc');
+
+            fetch("/api", {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: new URLSearchParams({
+                    name: productName,
+                    descr: productDesc
+                })
+            }).then((response) => {
+                if (response.status == 200) {
+                    return response.json();
+                }
+                return null;
+            }).then((item) => {
+                if (item) {
+                    var tableRows = document.getElementById("trRows");
+
+                    var tr = document.createElement('tr');
+                    tr.dataset.itemid = item.id;
+                    
+                    var tdName = document.createElement('td');
+                    tdName.innerText = item.name;
+
+                    var tdDesc = document.createElement('td');
+                    tdDesc.innerText = item.description;
+
+                    var tdBtns = document.createElement('td');
+
+                    var editBtn = document.createElement('a');
+                    editBtn.classList.add('edit-btn');
+                    editBtn.href = '#';
+                    editBtn.innerText = 'Edit';
+
+                    var delBtn = document.createElement('a');
+                    delBtn.classList.add('del-btn');
+                    delBtn.href = '#';
+                    delBtn.innerText = 'Delete';
+
+                    tdBtns.appendChild(editBtn);
+                    tdBtns.append(' | ')
+                    tdBtns.appendChild(delBtn);
+
+                    editBtn.addEventListener('click', (e) => {
+                        onEdit(e.target);
+                        return false;
+                    });
+                    delBtn.addEventListener('click', (e) => {
+                        onDelete(e.target);
+                        return false;
+                    });
+
+                    tr.appendChild(tdName);
+                    tr.appendChild(tdDesc);
+                    tr.appendChild(tdBtns);
+
+                    tableRows.appendChild(tr);
+
+                    createForm.closest(".modal").style.display = 'none';
+
+                    Array.prototype.forEach.call(createForm.getElementsByTagName('input'), (elem) => {
+                        if (elem.type !== 'submit') {
+                            elem.value = '';
+                        }
+                    });
+                }
+            }).catch((err) => {
+                alert(err.message);
+            });
+
+            return false;
+        };
+    });
+
+    function onCreateNewClick(e) {
+        document.getElementById('createModal').style.display = 'block';
+
+        return false;
+    }
+</script>
+
+<p>
+    <a href="#" onclick="return onCreateNewClick();">Create New Product</a>
+</p>
+<form id="searchForm" action="#">
+    <input type="text" name="text" />
+    <input type="submit" value="Search" />
+</form>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Name)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Description)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody id="trRows">
+@foreach (var item in Model) {
+        <tr data-itemid="@item.Id">
+            <td>
+                @Html.DisplayFor(modelItem => item.Name)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Description)
+            </td>
+            <td>
+                <a class="edit-btn" href="#">Edit</a> |
+                <a class="del-btn" href="#">Delete</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
+
+<div id="createModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <form action="#" id="createForm">
+            <table>
+                <tbody>
+                    <tr>
+                        <td>Product name:</td>
+                        <td><input type="text" name="productName" /></td>
+                    </tr>
+                    <tr>
+                        <td>Product description:</td>
+                        <td><input type="text" name="productDesc" /></td>
+                    </tr>
+                </tbody>
+            </table>
+            <input type="submit" value="Create" />
+        </form>
+    </div>
+</div>
+
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <form action="#" id="editForm">
+            <input type="text" name="id" style="display: none" />
+            <table>
+                <tbody>
+                    <tr>
+                        <td>Product name:</td>
+                        <td><input type="text" name="productName" /></td>
+                    </tr>
+                    <tr>
+                        <td>Product description:</td>
+                        <td><input type="text" name="productDesc" /></td>
+                    </tr>
+                </tbody>
+            </table>
+            <input type="submit" value="Update" />
+        </form>
+    </div>
+</div>

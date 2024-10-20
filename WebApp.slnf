@@ -1,0 +1,9 @@
+{
+  "solution": {
+    "path": "TextExercise.sln",
+    "projects": [
+      "Models\\TestExercise.Models.csproj",
+      "WebAppMVC\\WebAppMVC.csproj"
+    ]
+  }
+}
