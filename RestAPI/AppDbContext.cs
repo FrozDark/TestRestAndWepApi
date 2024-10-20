@@ -1,9 +1,6 @@
-﻿using Microsoft.CodeAnalysis.Elfie.Diagnostics;
-using Microsoft.Data.SqlClient;
+﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
-using System.Reflection.Metadata;
-using System.Runtime.ConstrainedExecution;
 using System.Text.RegularExpressions;
 using TestExercise.Models;
 
@@ -54,19 +51,26 @@ namespace TestWebApp
                 }
             }
 
+            // Создание базы данных
             await ExecuteScriptFile("create_TestDB.sql");
+            // Создание таблицы продукции и его индексов
             await ExecuteScriptFile("create_table_Product.sql");
+            // Создание таблицы версии продукции, индексов и ограничетелей
             await ExecuteScriptFile("create_table_ProductVersion.sql");
+            // Создание хранимой функции (процедуры)
             await ExecuteScriptFile("create_stored_procedure_SearchVersion.sql");
+            // Создание журнала событий с дополнительным полем Action
             await ExecuteScriptFile("create_table_EventLogs.sql");
+            // Создание триггеров для продукции и их версии
             await ExecuteScriptFile("create_log_triggers.sql");
+            // Заполнение таблиц тестовыми данными
             await ExecuteScriptFile("insert_arbitrary_data.sql");
 
-            // Проверка нашей функции поиска
-	        // @productName nvarchar(255), 
-	        // @productVersionName nvarchar(255),
-	        // @minValue real,
-	        // @maxValue real
+            // Проверка хранимой функции (процедуры) поиска версии продукции
+            // @productName nvarchar(255), 
+            // @productVersionName nvarchar(255),
+            // @minValue real,
+            // @maxValue real
             await using (var command = new SqlCommand("SearchProductVersion", connection))
             {
                 command.CommandType = CommandType.StoredProcedure;
